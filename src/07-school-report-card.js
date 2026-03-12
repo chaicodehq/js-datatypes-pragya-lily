@@ -42,4 +42,50 @@
  */
 export function generateReportCard(student) {
   // Your code here
+  // Validation checks
+  if (!student || typeof student !== 'object') return null;
+  if (typeof student.name !== 'string' || student.name.trim() === '') return null;
+  if (!student.marks || typeof student.marks !== 'object' || Object.keys(student.marks).length === 0) return null;
+
+  // Validate all marks are numbers between 0-100
+  const marks = Object.values(student.marks);
+  if (!marks.every(mark => typeof mark === 'number' && mark >= 0 && mark <= 100)) return null;
+
+  // Calculate totalMarks
+  const totalMarks = marks.reduce((sum, mark) => sum + mark, 0);
+
+  // Calculate percentage
+  const subjectCount = Object.keys(student.marks).length;
+  const percentage = parseFloat(((totalMarks / (subjectCount * 100)) * 100).toFixed(2));
+
+  // Determine grade
+  let grade;
+  if (percentage >= 90) grade = 'A+';
+  else if (percentage >= 80) grade = 'A';
+  else if (percentage >= 70) grade = 'B';
+  else if (percentage >= 60) grade = 'C';
+  else if (percentage >= 40) grade = 'D';
+  else grade = 'F';
+
+  // Find highest and lowest subjects
+  const entries = Object.entries(student.marks);
+  const highestSubject = entries.reduce((max, [subject, mark]) => mark > max[1] ? [subject, mark] : max)[0];
+  const lowestSubject = entries.reduce((min, [subject, mark]) => mark < min[1] ? [subject, mark] : min)[0];
+
+  // Filter passed and failed subjects
+  const passedSubjects = Object.entries(student.marks).filter(([, mark]) => mark >= 40).map(([subject]) => subject);
+  const failedSubjects = Object.entries(student.marks).filter(([, mark]) => mark < 40).map(([subject]) => subject);
+
+  return {
+    name: student.name,
+    totalMarks,
+    percentage,
+    grade,
+    highestSubject,
+    lowestSubject,
+    passedSubjects,
+    failedSubjects,
+    subjectCount
+  };
 }
+

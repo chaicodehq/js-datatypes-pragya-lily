@@ -47,4 +47,83 @@
  */
 export function buildZomatoOrder(cart, coupon) {
   // Your code here
+  if (!Array.isArray(cart) || cart.length === 0) {
+    return null;
+  }
+
+  // 2. Process items (skip qty <= 0)
+  const items = cart
+    .filter((item) => item.qty > 0)
+    .map((item) => {
+      const basePrice = item.price;
+      
+      // Calculate sum of addon prices
+      const addonTotal = (item.addons || []).reduce((sum, addonStr) => {
+        const [_, price] = addonStr.split(":");
+        return sum + parseFloat(price || 0);
+      }, 0);
+
+      const itemTotal = (basePrice + addonTotal) * item.qty;
+
+      return {
+        name: item.name,
+        qty: item.qty,
+        basePrice,
+        addonTotal,
+        itemTotal,
+      };
+    });
+
+  // Re-check: If after filtering qty <= 0 the items array is empty, return null
+  if (items.length === 0) return null;
+
+  // 3. Calculate Subtotal
+  const subtotal = items.reduce((sum, item) => sum + item.itemTotal, 0);
+
+  // 4. Calculate Delivery Fee
+  let deliveryFee = 0;
+  if (subtotal < 500) {
+    deliveryFee = 30;
+  } else if (subtotal < 1000) {
+    deliveryFee = 15;
+  } else {
+    deliveryFee = 0;
+  }
+
+  // 5. Calculate GST (5% of subtotal)
+  const gst = parseFloat((subtotal * 0.05).toFixed(2));
+
+  // 6. Calculate Discount
+  let discount = 0;
+  const couponCode = coupon ? coupon.toLowerCase() : "";
+
+  switch (couponCode) {
+    case "first50":
+      discount = Math.min(subtotal * 0.5, 150);
+      break;
+    case "flat100":
+      discount = 100; // Applied fully even if > subtotal
+      break;
+    case "freeship":
+      discount = deliveryFee;
+      deliveryFee = 0; // Explicitly set to 0 for the output
+      break;
+    default:
+      discount = 0;
+  }
+
+  // 7. Calculate Grand Total
+  // Formula: subtotal + deliveryFee + gst - discount
+  // Math.max(0, ...) ensures we don't return negative values
+  const grandTotal = Math.max(0, parseFloat((subtotal + deliveryFee + gst - discount).toFixed(2)));
+
+  return {
+    items,
+    subtotal,
+    deliveryFee,
+    gst,
+    discount: parseFloat(discount.toFixed(2)),
+    grandTotal,
+  };
 }
+

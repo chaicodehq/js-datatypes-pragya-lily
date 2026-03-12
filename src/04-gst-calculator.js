@@ -40,4 +40,43 @@
  */
 export function calculateGST(amount, category) {
   // Your code here
+  // Validate amount is a positive finite number
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return null;
+  }
+
+  // Validate category is a string
+  if (typeof category !== 'string') {
+    return null;
+  }
+
+  // GST rates mapping
+  const gstRates = {
+    essential: 0,
+    food: 5,
+    standard: 12,
+    electronics: 18,
+    luxury: 28
+  };
+
+  // Get GST rate (case-insensitive)
+  const normalizedCategory = category.toLowerCase();
+  const gstRate = gstRates[normalizedCategory];
+
+  // Return null if category is unknown
+  if (gstRate === undefined) {
+    return null;
+  }
+
+  // Calculate GST amount and total
+  const gstAmount = parseFloat((amount * gstRate / 100).toFixed(2));
+  const totalAmount = parseFloat((amount + gstAmount).toFixed(2));
+
+  return {
+    baseAmount: amount,
+    gstRate,
+    gstAmount,
+    totalAmount
+  };
 }
+

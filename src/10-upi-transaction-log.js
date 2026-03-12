@@ -48,4 +48,77 @@
  */
 export function analyzeUPITransactions(transactions) {
   // Your code here
+  // 1. Initial Validation
+  if (!Array.isArray(transactions) || transactions.length === 0) {
+    return null;
+  }
+
+  // 2. Filter Valid Transactions
+  // Amount > 0 and Type must be 'credit' or 'debit'
+  const validTxns = transactions.filter((txn) => {
+    const isValidAmount = typeof txn.amount === "number" && txn.amount > 0;
+    const isValidType = txn.type === "credit" || txn.type === "debit";
+    return isValidAmount && isValidType;
+  });
+
+  // 3. Post-filter Validation
+  if (validTxns.length === 0) {
+    return null;
+  }
+
+  // 4. Initialize accumulators
+  let totalCredit = 0;
+  let totalDebit = 0;
+  let totalValidAmountSum = 0;
+  let highestTransaction = validTxns[0];
+  const categoryBreakdown = {};
+  const contactCounts = {};
+
+  // 5. Single-pass Analysis
+  validTxns.forEach((txn) => {
+    // Totals logic
+    if (txn.type === "credit") totalCredit += txn.amount;
+    if (txn.type === "debit") totalDebit += txn.amount;
+    totalValidAmountSum += txn.amount;
+
+    // Highest Transaction logic
+    if (txn.amount > highestTransaction.amount) {
+      highestTransaction = txn;
+    }
+
+    // Category Breakdown logic
+    categoryBreakdown[txn.category] = (categoryBreakdown[txn.category] || 0) + txn.amount;
+
+    // Contact frequency logic
+    contactCounts[txn.to] = (contactCounts[txn.to] || 0) + 1;
+  });
+
+  // 6. Find Frequent Contact (Handle ties by first appearance)
+  let frequentContact = "";
+  let maxCount = 0;
+  
+  // We extract unique contacts in their original order of appearance
+  const uniqueContactsOrder = [...new Set(validTxns.map(t => t.to))];
+  
+  uniqueContactsOrder.forEach(contact => {
+    if (contactCounts[contact] > maxCount) {
+      maxCount = contactCounts[contact];
+      frequentContact = contact;
+    }
+  });
+
+  // 7. Final Calculations & Return
+  return {
+    totalCredit,
+    totalDebit,
+    netBalance: totalCredit - totalDebit,
+    transactionCount: validTxns.length,
+    avgTransaction: Math.round(totalValidAmountSum / validTxns.length),
+    highestTransaction,
+    categoryBreakdown,
+    frequentContact,
+    allAbove100: validTxns.every((t) => t.amount > 100),
+    hasLargeTransaction: validTxns.some((t) => t.amount >= 5000),
+  };
 }
+
